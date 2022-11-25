@@ -86,4 +86,8 @@ target/
 
 # Mypy cache
 .mypy_cache/
+## data
 **/data
+*.csv 
+*.npy
+*.parquet

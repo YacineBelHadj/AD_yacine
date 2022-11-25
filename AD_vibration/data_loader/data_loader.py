@@ -1,11 +1,11 @@
-from AD_structure.utils import get_config
+from AD_vibration.utils import get_config
+from AD_vibration.data_loader.utils import readTDMS, append_dict , datetime_to_path
 from dataclasses import dataclass
 from typing import Union
 from pathlib import Path
 from datetime import datetime,  timedelta
 import pandas as pd
 import numpy as np
-from AD_structure.data_loader.utils import readTDMS, append_dict , datetime_to_path
 
 @dataclass(frozen=True)
 class Sensor:
