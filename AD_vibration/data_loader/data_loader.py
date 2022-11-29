@@ -38,7 +38,7 @@ class DataLoader:
         self.data_root = Path(get_config()['PATH']['data_root'])
 
         if not self.data_root.exists():
-            raise ValueError(f'Invalid data root: {self.data_root}')
+            print(f'Invalid data root: {self.data_root}')
 
         self.path = self.data_root / self.sensor.location /self.sensor.data_type/'_'.join([self.sensor.data_type,self.sensor.name])
 
@@ -106,10 +106,15 @@ class DataLoader:
 
         return self._load(start, end)
 
+def get_processed_PSD():
+    data_root_PSD = Path(get_config()['PATH']['data_root_processed_PSD'])
+    psds=np.load(data_root_PSD / 'PSDs.npy')
+    datetimes=pd.read_csv(data_root_PSD / 'datetimes.csv')['0'].values
+    return psds, datetimes
+
 
 if __name__ == '__main__':
     sensor = Sensor(name='ACC', location='MO04', data_type='TDD', format='.tdms')
     loader = DataLoader(sensor=sensor)
-    start = datetime(2022, 6, 13,3,24,0)
-    end = datetime(2022, 6, 30)
-    data = loader.get_data(start=start)
+    data = loader.get_data('2022-04-01 00:00:00')
+    print(data.keys())

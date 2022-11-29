@@ -11,6 +11,7 @@ def get_config(path_relative='config.ini'):
 
 if __name__=='__main__':
     config = configparser.ConfigParser()
-    config['PATH'] = {'data_root': '/media/yacine/Intenso/RawData'}
+    config['PATH'] = {'data_root': '/media/yacine/Intenso/RawData',
+                      'data_root_processed_PSD': './data/processed/PSD',}
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
