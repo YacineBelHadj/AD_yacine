@@ -2,6 +2,8 @@ from scipy.signal import decimate
 from scipy.signal import welch
 from dataclasses import dataclass
 import numpy as np
+import sys
+EPS=sys.float_info.epsilon
 
 def compute_PSD(signals:np.ndarray,fs:int=250,q:int=2,nperseg:int=250*30,noverlap:int=250*20):
     """ Compute the power spectral density of the signal with Welch's method.
@@ -79,7 +81,7 @@ class Melfilterbank:
         Returns:
             _type_: mel spectrogram
         """
-        return 10.0* np.log10(np.dot(self.filters, np.transpose(PSD)))
+        return 10.0* np.log10(np.dot(self.filters, np.transpose(PSD))+EPS)
 
 if __name__ =='__main__':
     from AD_vibration.data_loader.data_loader import DataLoader, Sensor, get_processed_PSD
@@ -97,8 +99,9 @@ if __name__ =='__main__':
     plt.show()
     plt.close()
     mel_fb = mel(Sxxs[0])
-    plt.figure(figsize=(15,4))
-    plt.plot(mel_fb)
+    fig,ax= plt.subplots(nrows=2,figsize=(15,4))
+    ax[1].plot(mel_fb)
+    ax[0].plot(np.log(Sxxs[0].T+EPS))
     plt.show()
     plt.close()
 
