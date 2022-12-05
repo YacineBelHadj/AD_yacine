@@ -28,16 +28,10 @@ def freq_to_mel(freq):
 def mel_to_freq(mel):
     return 3 * (10**(mel / 250) - 1)
 
-def mel_filterbank(n_mels:int=40, fmin:float=0.0, fmax:float=None, n_fft:int=2048, fs:int=250): 
-    if fmax is None:
-        fmax = fs / 2
-    fmin_mel = freq_to_mel(fmin)
-    fmax_mel = freq_to_mel(fmax)
-    mels = np.linspace(fmin_mel, fmax_mel, n_mels + 2)
-    freqs = mel_to_freq(mels)
-    return np.floor((n_fft + 1) * freqs / fs) , freqs
+
 
 def get_filter_points(fmin, fmax, n_mels,fft_size, fs=250):
+    """ Compute the filter points ."""
     # Convert Hz to Mel
     min_mel = freq_to_mel(fmin)
     max_mel = freq_to_mel(fmax)
@@ -49,6 +43,7 @@ def get_filter_points(fmin, fmax, n_mels,fft_size, fs=250):
     return np.floor((fft_size + 1) * freqs / fs).astype(int) , freqs
 
 def get_filters(filter_points, FFT_size):
+    """ Compute the mel filters."""
     filters = np.zeros((len(filter_points)-2,int(FFT_size/2+1)))
     
     for n in range(len(filter_points)-2):
@@ -58,24 +53,54 @@ def get_filters(filter_points, FFT_size):
     return filters
 
 def energy_normalization(filters:np.array,mel_freqs:np.ndarray,n_mels:int):
+    """ Energy normalization of the mel filters."""
     enorm = 2.0 / (mel_freqs[2:n_mels] - mel_freqs[:n_mels-2])
     filters *= enorm[:, np.newaxis]
     return filters
 @dataclass
-class mel_filterbank:
+class Melfilterbank:
+    """ compute the mel filterbank and apply it to the PSD"""
     n_mels: int = 40 
     fmin: float = 0.0
     fmax: float = 125.0
     n_fft: int = 250*30
     fs: int = 250
     def __post_init__(self):
-        mel_filterbank(self.n_mels,self.fmin,self.fmax,self.n_fft,self.fs)
         filter_points, mel_freqs=get_filter_points(self.fmin,self.fmax,self.n_mels,self.n_fft)
         self.filters = get_filters(filter_points, self.n_fft)
         self.filters = energy_normalization(self.filters,mel_freqs,self.n_mels)
 
-    def __call__(self, PSD):
-        return 10.0* np.log10(np.dot(self.filters, PSD))
+    def __call__(self, PSD:np.ndarray):
+        """ apply the mel filterbank to the PSD
+
+        Args:
+            PSD (np.ndarray): 
+
+        Returns:
+            _type_: mel spectrogram
+        """
+        return 10.0* np.log10(np.dot(self.filters, np.transpose(PSD)))
+
+if __name__ =='__main__':
+    from AD_vibration.data_loader.data_loader import DataLoader, Sensor, get_processed_PSD
+    from datetime import datetime, timedelta
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    Sxxs,dts=get_processed_PSD()
+    mel = Melfilterbank(n_mels=400, fmin=0.0, fmax=125.0, n_fft=250*30, fs=125)
+    plt.figure(figsize=(15,4))
+    for n in range(mel.filters.shape[0]):
+        plt.plot(np.linspace(0,62.5,3751),mel.filters[n])
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Filter weight')
+    plt.show()
+    plt.close()
+    mel_fb = mel(Sxxs[0])
+    plt.figure(figsize=(15,4))
+    plt.plot(mel_fb)
+    plt.show()
+    plt.close()
 
 
 
