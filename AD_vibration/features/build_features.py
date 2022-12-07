@@ -1,5 +1,4 @@
-from scipy.signal import decimate
-from scipy.signal import welch
+from scipy.signal import welch , decimate , detrend
 from dataclasses import dataclass
 import numpy as np
 import sys
@@ -20,6 +19,8 @@ def compute_PSD(signals:np.ndarray,fs:int=250,q:int=2,nperseg:int=250*30,noverla
     """
     if q > 1:
         signals = decimate(signals, q, axis=1)
+    signals = detrend(signals,type='constant')
+
     signals = signals - np.mean(signals, axis=1, keepdims=True)
     f,Sxxs= welch(signals,fs=int(fs/q),nperseg=nperseg,noverlap=noverlap)
     return f,Sxxs
