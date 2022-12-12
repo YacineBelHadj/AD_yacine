@@ -36,5 +36,21 @@ class MahalanobisDistance(BaseEstimator, TransformerMixin):
         if isinstance(data, pd.DataFrame):
             data = data.to_numpy()
         distance = np.sqrt(np.diag((data - self.mean) @ np.linalg.inv(self.cov) @ (data - self.mean).T))
-        return distance.diagonal()
+        return distance
 
+def model_confidence(sensor:int,y_pred:np.ndarray):
+    """ Compute the confidence of the model
+    Parameters
+    ----------
+    sensor : int
+        Sensor number
+    y_pred : np.ndarray
+        Predicted labels
+    Returns
+    -------
+    confidence : np.ndarray
+        Confidence of the model
+    """
+    confidence = y_pred[:,sensor]
+    return confidence
+    

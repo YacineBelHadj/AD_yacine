@@ -1,35 +1,41 @@
 from scipy.signal import welch , decimate , detrend
 from dataclasses import dataclass
+from AD_vibration.utils import get_config
 import numpy as np
 import sys
+from pathlib import Path
 EPS=sys.float_info.epsilon
 
-def compute_PSD(signals:np.ndarray,fs:int=250,q:int=2,nperseg:int=250*30,noverlap:int=250*20):
+
+def compute_PSD(signals:np.ndarray,fs:int=250,q:int=2,tperseg:int=30,toverlap:int=15):
     """ Compute the power spectral density of the signal with Welch's method.
         with a decimate factor of q. if q=1, no decimation is performed.
     Args:
-        signals (no): _description_
+        signals (np.ndarray): _description_
         fs (int, optional): _description_. Defaults to 250.
         q (int, optional): _description_. Defaults to 2.
-        nperseg (_type_, optional): _description_. Defaults to 250*30.
-        noverlap (_type_, optional): _description_. Defaults to 250*20.
+        tperseg (int, optional): _description_. Defaults to 250.
+        toverlap (int, optional): _description_. Defaults to 250.
+
 
     Returns:
         _type_: _description_
     """
+    if signals.ndim == 1:
+        signals = signals.reshape(1, -1)
     if q > 1:
         signals = decimate(signals, q, axis=1)
     signals = detrend(signals,type='constant')
-
+    fs = int(fs / q)
     signals = signals - np.mean(signals, axis=1, keepdims=True)
-    f,Sxxs= welch(signals,fs=int(fs/q),nperseg=nperseg,noverlap=noverlap)
+    f,Sxxs= welch(signals,fs=fs,nperseg=fs*tperseg,noverlap=fs*toverlap)
     return f,Sxxs
 
 
 def freq_to_mel(freq):
-    return 250 * np.log10(1 + freq / 3)
+    return 250 * np.log10(1 + freq / 7)
 def mel_to_freq(mel):
-    return 3 * (10**(mel / 250) - 1)
+    return 7 * (10**(mel / 250) - 1)
 
 
 
@@ -84,14 +90,25 @@ class Melfilterbank:
         """
         return 10.0* np.log10(np.dot(self.filters, np.transpose(PSD))+EPS)
 
+
 if __name__ =='__main__':
     from AD_vibration.data_loader.data_loader import DataLoader, Sensor, get_processed_PSD
     from datetime import datetime, timedelta
     import numpy as np
     import matplotlib.pyplot as plt
-
     Sxxs,dts=get_processed_PSD()
-    mel = Melfilterbank(n_mels=400, fmin=0.0, fmax=125.0, n_fft=250*30, fs=125)
+    #####
+    freq = np.linspace(0,125,250*30+1)
+    melfreq = freq_to_mel(freq)
+    plt.figure(figsize=(15,4))
+    plt.plot(freq,melfreq)
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Mel')
+    plt.show()
+    plt.close()
+    #####
+    #####
+    mel = Melfilterbank(n_mels=388, fmin=0.0, fmax=125.0, n_fft=250*30, fs=125)
     plt.figure(figsize=(15,4))
     for n in range(mel.filters.shape[0]):
         plt.plot(np.linspace(0,62.5,3751),mel.filters[n])
@@ -99,12 +116,29 @@ if __name__ =='__main__':
     plt.ylabel('Filter weight')
     plt.show()
     plt.close()
+    #####
     mel_fb = mel(Sxxs[0])
     fig,ax= plt.subplots(nrows=2,figsize=(15,4))
     ax[1].plot(mel_fb)
     ax[0].plot(np.log(Sxxs[0].T+EPS))
     plt.show()
     plt.close()
+
+    if True :
+        mels_list = []
+        print('Loading data ...')
+        Sxxs,dts=get_processed_PSD()
+        print('Computing mel spectrogram ...')
+        for psds in Sxxs:
+            mel_fb = mel(psds)
+            mels_list.append(mel_fb)
+        print('Saving data ...')
+        mels = np.stack(mels_list)
+        np.save(Path(get_config()['PATH']['data_root_processed_psd'])/Path('mels1.npy'),mels)
+
+
+
+
 
 
 

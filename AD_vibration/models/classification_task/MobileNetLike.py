@@ -1,4 +1,7 @@
 from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, GlobalAveragePooling1D, Dense, Dropout, ReLU,DepthwiseConv1D, add
+from AD_vibration.models.classification_task.keras_layers import CosFace
+from keras.models import Model
+
 def _expansion_block(x,t,filters,block_id):
     prefix = f'block_{block_id}_'
     total_filters = t * filters
@@ -29,33 +32,31 @@ def Bottleneck(x,t,filters,kernel_size,out_channels,stride,block_id):
     return y
 
 
-def MobileNetV2(input_shape = (198,1), n_classes=12):    
+def MobileNetV2(input_shape = (198,1), n_classes=12, CosFace:bool = True):    
     inputLayer = Input(input_shape)
     label = Input(shape=(n_classes,))
 
-    x = Conv1D(32,3,strides=2,padding='same', use_bias=False)(inputLayer)
-    x = BatchNormalization(name='conv1_bn')(x)
-    x = ReLU(6, name='conv1_relu')(x)    # 17 Bottlenecks
-    x = _expansion_block(x,t=2,)
-    x = depthwise_block(x,stride=1,block_id=1)
-    x = projection_block(x, out_channels=16,block_id=1)    
-    x = Bottleneck(x, t = 2, filters = x.shape[-1], out_channels = 128, stride = 2,block_id = 2)    
-    x = Bottleneck(x, t = 4, filters = x.shape[-1], out_channels = 128, stride = 1,block_id = 3)    
-    x = Bottleneck(x, t = 4, filters = x.shape[-1], out_channels = 32, stride = 2,block_id = 4)    
+    x = Conv1D(32,3,strides=2,padding='same',activation='relu')(inputLayer)
+    x = Conv1D(32,3,strides=2,padding='same',activation='relu')(x)  
+    x = Bottleneck(x, t = 2, filters = x.shape[-1],kernel_size=3, out_channels = 128, stride = 2,block_id = 2)    
+    x = Bottleneck(x, t = 4, filters = x.shape[-1],kernel_size=3, out_channels = 128, stride = 1,block_id = 3)    
+    x = Bottleneck(x, t = 4, filters = x.shape[-1],kernel_size=3, out_channels = 128, stride = 2,block_id = 4)    
 
     x = Conv1D(filters = 512,kernel_size = 1,padding='same',use_bias=False, name = 'pre_final_conv')(x)
     x = BatchNormalization(name='last_bn')(x)
-    x = ReLU(6,name='last_relu')(x)    
+    x = ReLU(name='last_relu')(x)    
 
     x = Conv1D(filters = 512,kernel_size = 1,padding='same',use_bias=False, activation=None, name = 'conv_lin')(x)
     x = Conv1D(filters = 128,kernel_size = 1,padding='same',use_bias=False,activation = None, name = 'last_conv_lin_')(x)
     x = Dropout(0.2)(x)
     emb = GlobalAveragePooling1D()(x)
+    if CosFace:
+        out = CosFace(n_classes)([emb,label])
+        model_train = Model(inputs=[inputLayer,label], outputs=out)
+    else :
+        out = Dense(n_classes)(emb)
+        model_train = Model(inputs=[inputLayer,label], outputs=out)
 
-    h = CosFace(num_class)([emb,label])
-
-
-    model = Model(inputs=[inputLayer,label], outputs=h) 
     encoder = Model(inputs=inputLayer, outputs=emb) 
     return model, encoder
 
