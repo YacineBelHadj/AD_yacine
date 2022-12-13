@@ -1,5 +1,5 @@
 import tensorflow as tf
-import datetime
+from datetime import datetime
 
 def get_callbacks():
     logdir_tb = "./logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")

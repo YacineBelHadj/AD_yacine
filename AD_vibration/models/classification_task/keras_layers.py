@@ -200,3 +200,26 @@ class SphereFace(Layer):
 
     def compute_output_shape(self, input_shape):
         return (None, self.n_classes)
+import tensorflow as tf
+
+class CosineConv1D(tf.keras.layers.Conv1D):
+    """ Cosine Convolution 1D
+    This layer is a 1D convolution layer with cosine similarity as kernel.
+    """
+    def init(self, filters, kernel_size, strides=1, padding='valid', **kwargs):
+        super(CosineConv1D, self).init(
+        filters=filters,
+        kernel_size=kernel_size,
+        strides=strides,
+        padding=padding,
+        **kwargs
+        )
+
+    def call(self, inputs):
+        inputs_norm = tf.nn.l2_normalize(inputs, axis=-1)
+        kernel_norm = tf.nn.l2_normalize(self.kernel, axis=-1)
+        output = tf.nn.conv1d(inputs_norm, kernel_norm, self.strides, self.padding)
+        
+        # Apply l2 normalization on each window of convolution
+        output_norm = tf.map_fn(lambda x: tf.nn.l2_normalize(x, axis=-1), output)
+        return output_norm
