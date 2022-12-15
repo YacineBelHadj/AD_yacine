@@ -12,3 +12,4 @@ plt.rcParams["xtick.bottom"] = False
 plt.rcParams["xtick.labelbottom"] = True
 plt.rcParams["ytick.left"] = False
 plt.rcParams["ytick.labelleft"] = True
+

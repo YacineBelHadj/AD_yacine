@@ -15,7 +15,7 @@ X_train,y_train,X,Y= dp.prepare_data(input_data)
 #%%
 
 model = DenseSignalClassifier(inputDim=X_train[0].shape, num_class=12,dense_layers=[2048,1024,512,256,128,64,32]).build_model()
-model.fit(X_train,y_train,epochs=100,batch_size=32,callbacks=get_callbacks())
+model.fit(X_train,y_train,epochs=100,batch_size=32,callbacks=get_callbacks(),validation_split=0.2)
 
 
 # %%
